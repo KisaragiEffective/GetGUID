@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using AssemblyDefinitionAsset = UnityEditorInternal.AssemblyDefinitionAsset;
 
-namespace GetGUID
+namespace GetGUID.Editor
 {
     // ReSharper disable once InconsistentNaming
     internal class GetGUIDWindow : EditorWindow

@@ -4,7 +4,7 @@ using UnityEditor;
 using UnityEngine;
 using AssemblyDefinitionAsset = UnityEditorInternal.AssemblyDefinitionAsset;
 
-namespace GetGUID
+namespace GetGUID.Editor
 {
     internal static class UnityAssemblyDefinitionFinder
     {

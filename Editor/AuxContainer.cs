@@ -1,4 +1,4 @@
-namespace GetGUID
+namespace GetGUID.Editor
 {
     internal class AuxContainer<TMain, TAux>
     {

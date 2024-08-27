@@ -1,6 +1,6 @@
 {
-    "name": "GetGUID",
-    "rootNamespace": "global::GetGUID",
+    "name": "GetGUID.Editor",
+    "rootNamespace": "global::GetGUID.Editor",
     "references": [],
     "includePlatforms": [
         "Editor"
