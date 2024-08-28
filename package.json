@@ -1,0 +1,19 @@
+{
+  "name": "io.github.kisaragieffective.get-guid",
+  "version": "0.1.0",
+  "description": "Show Asset's GUID.",
+  "displayName": "GetGUID",
+  "unity": "2022.3",
+  "author": {
+    "name": "Kisaragi Marine",
+    "email": "kisaragi.marine@gmail.com",
+    "url": "https://github.com/kisaragieffective"
+  },
+  "repository": {
+    "url": "https://github.com/KisaragiEffective/GetGUID"
+  },
+  "dependencies": {
+  },
+  "keywords": ["guid", "GUID"],
+  "license": "MIT"
+}
