@@ -1,3 +1,4 @@
+using JetBrains.Annotations;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -45,6 +46,7 @@ namespace GetGUID.Editor
             rootVisualElement.Add(typeSpecificInformation);
             typeSpecificInformation.Add(CreateScriptInformationUI(target));
             typeSpecificInformation.Add(CreateGameObjectInformationUI(target));
+            typeSpecificInformation.Add(CreateDLLInformationUI(target));
 
             var pathResult = new TextField("Relative path") { isReadOnly = true };
             rootVisualElement.Add(pathResult);
@@ -68,6 +70,44 @@ namespace GetGUID.Editor
                 pathResult.value = FoldIrregularValue(pv);
                 guidResult.value = FoldIrregularValue(AssetDatabase.AssetPathToGUID(pv));
             });
+        }
+
+        private static VisualElement CreateDLLInformationUI(ObjectField target)
+        {
+            var information = new VisualElement()
+            {
+                style = { display = DisplayStyle.None }
+            };
+
+            var isCompatibleForEditor = new Toggle("Editor compatible") { value = false };
+            information.Add(isCompatibleForEditor);
+            
+            target.RegisterValueChangedCallback(ev =>
+            {
+                var v = ev.newValue;
+                var g = GetPluginImporter(v);
+                information.style.display = g != null
+                    ? DisplayStyle.Flex
+                    : DisplayStyle.None;
+            });
+            target.RegisterValueChangedCallback(ev =>
+            {
+                var g = GetPluginImporter(ev.newValue);
+                if (g == null)
+                {
+                    return;
+                }
+
+                isCompatibleForEditor.value = g.GetCompatibleWithEditor();
+            });
+
+            return information;
+
+            PluginImporter? GetPluginImporter([CanBeNull] Object asset)
+            {
+                return asset is DefaultAsset ? 
+                    AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(asset)) as PluginImporter : null;
+            }
         }
 
         private static VisualElement CreateGameObjectInformationUI(ObjectField target)
