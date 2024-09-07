@@ -47,6 +47,7 @@ namespace GetGUID.Editor
             typeSpecificInformation.Add(CreateScriptInformationUI(target));
             typeSpecificInformation.Add(CreateGameObjectInformationUI(target));
             typeSpecificInformation.Add(CreateDLLInformationUI(target));
+            typeSpecificInformation.Add(CreateMaterialSpecificInformationUI(target));
 
             var pathResult = new TextField("Relative path") { isReadOnly = true };
             rootVisualElement.Add(pathResult);
@@ -70,6 +71,45 @@ namespace GetGUID.Editor
                 pathResult.value = FoldIrregularValue(pv);
                 guidResult.value = FoldIrregularValue(AssetDatabase.AssetPathToGUID(pv));
             });
+        }
+
+        private static VisualElement CreateMaterialSpecificInformationUI(ObjectField target)
+        {
+            var materialSpecificInformation = new VisualElement
+            {
+                style = { display = DisplayStyle.None }
+            };
+            target.RegisterValueChangedCallback(ev =>
+            {
+                materialSpecificInformation.style.display =
+                    ev.newValue is Material ? DisplayStyle.Flex : DisplayStyle.None;
+            });
+
+            var parent = new ObjectField("parent") { objectType = typeof(Material) };
+            materialSpecificInformation.Add(parent);
+            var shader = new ObjectField("shader") { objectType = typeof(Shader) };
+            materialSpecificInformation.Add(shader);
+            var shaderPath = new TextField("shader path");
+            materialSpecificInformation.Add(shaderPath);
+            var shaderGuid = new TextField("shader GUID");
+            materialSpecificInformation.Add(shaderGuid);
+
+            target.RegisterValueChangedCallback(ev =>
+            {
+                var newValue = ev.newValue as Material;
+                if (newValue == null)
+                {
+                    parent.value = null;
+                    return;
+                }
+
+                parent.value = newValue.parent;
+                shader.value = newValue.shader;
+                shaderPath.value = AssetDatabase.GetAssetPath(newValue.shader);
+                shaderGuid.value = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(newValue.shader));
+            });
+
+            return materialSpecificInformation;
         }
 
         private static VisualElement CreateDLLInformationUI(ObjectField target)
