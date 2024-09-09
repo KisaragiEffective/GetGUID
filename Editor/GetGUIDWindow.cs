@@ -1,9 +1,11 @@
+using System;
 using JetBrains.Annotations;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 using AssemblyDefinitionAsset = UnityEditorInternal.AssemblyDefinitionAsset;
+using Object = UnityEngine.Object;
 
 namespace GetGUID.Editor
 {
@@ -93,6 +95,8 @@ namespace GetGUID.Editor
             materialSpecificInformation.Add(shaderPath);
             var shaderGuid = new TextField("shader GUID");
             materialSpecificInformation.Add(shaderGuid);
+            var materialProperties = new Foldout { text = "Material property" };
+            materialSpecificInformation.Add(materialProperties);
 
             target.RegisterValueChangedCallback(ev =>
             {
@@ -107,6 +111,23 @@ namespace GetGUID.Editor
                 shader.value = newValue.shader;
                 shaderPath.value = AssetDatabase.GetAssetPath(newValue.shader);
                 shaderGuid.value = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(newValue.shader));
+                materialProperties.Clear();
+                var h = MaterialEditor.GetMaterialProperties(new Object[] { newValue });
+                foreach (var materialProperty in h)
+                {
+                    var s = materialProperty.type switch
+                    {
+                        MaterialProperty.PropType.Color => "color",
+                        MaterialProperty.PropType.Vector => "vector",
+                        MaterialProperty.PropType.Float => "float",
+                        MaterialProperty.PropType.Range => "range",
+                        MaterialProperty.PropType.Texture => "texture",
+                        MaterialProperty.PropType.Int => "int",
+                        _ => throw new ArgumentOutOfRangeException()
+                    };
+                    materialProperties.Add(new Label($"{materialProperty.name}: {s}"));
+                }
+
             });
 
             return materialSpecificInformation;
