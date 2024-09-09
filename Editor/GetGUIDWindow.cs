@@ -1,9 +1,11 @@
+using System;
 using JetBrains.Annotations;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 using AssemblyDefinitionAsset = UnityEditorInternal.AssemblyDefinitionAsset;
+using Object = UnityEngine.Object;
 
 namespace GetGUID.Editor
 {
@@ -47,6 +49,7 @@ namespace GetGUID.Editor
             typeSpecificInformation.Add(CreateScriptInformationUI(target));
             typeSpecificInformation.Add(CreateGameObjectInformationUI(target));
             typeSpecificInformation.Add(CreateDLLInformationUI(target));
+            typeSpecificInformation.Add(CreateMaterialSpecificInformationUI(target));
 
             var pathResult = new TextField("Relative path") { isReadOnly = true };
             rootVisualElement.Add(pathResult);
@@ -70,6 +73,64 @@ namespace GetGUID.Editor
                 pathResult.value = FoldIrregularValue(pv);
                 guidResult.value = FoldIrregularValue(AssetDatabase.AssetPathToGUID(pv));
             });
+        }
+
+        private static VisualElement CreateMaterialSpecificInformationUI(ObjectField target)
+        {
+            var materialSpecificInformation = new VisualElement
+            {
+                style = { display = DisplayStyle.None }
+            };
+            target.RegisterValueChangedCallback(ev =>
+            {
+                materialSpecificInformation.style.display =
+                    ev.newValue is Material ? DisplayStyle.Flex : DisplayStyle.None;
+            });
+
+            var parent = new ObjectField("parent") { objectType = typeof(Material) };
+            materialSpecificInformation.Add(parent);
+            var shader = new ObjectField("shader") { objectType = typeof(Shader) };
+            materialSpecificInformation.Add(shader);
+            var shaderPath = new TextField("shader path");
+            materialSpecificInformation.Add(shaderPath);
+            var shaderGuid = new TextField("shader GUID");
+            materialSpecificInformation.Add(shaderGuid);
+            var materialProperties = new Foldout { text = "Material property" };
+            materialSpecificInformation.Add(materialProperties);
+
+            target.RegisterValueChangedCallback(ev =>
+            {
+                var newValue = ev.newValue as Material;
+                if (newValue == null)
+                {
+                    parent.value = null;
+                    return;
+                }
+
+                parent.value = newValue.parent;
+                shader.value = newValue.shader;
+                shaderPath.value = AssetDatabase.GetAssetPath(newValue.shader);
+                shaderGuid.value = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(newValue.shader));
+                materialProperties.Clear();
+                var h = MaterialEditor.GetMaterialProperties(new Object[] { newValue });
+                foreach (var materialProperty in h)
+                {
+                    var s = materialProperty.type switch
+                    {
+                        MaterialProperty.PropType.Color => "color",
+                        MaterialProperty.PropType.Vector => "vector",
+                        MaterialProperty.PropType.Float => "float",
+                        MaterialProperty.PropType.Range => "range",
+                        MaterialProperty.PropType.Texture => "texture",
+                        MaterialProperty.PropType.Int => "int",
+                        _ => throw new ArgumentOutOfRangeException()
+                    };
+                    materialProperties.Add(new Label($"{materialProperty.name}: {s}"));
+                }
+
+            });
+
+            return materialSpecificInformation;
         }
 
         private static VisualElement CreateDLLInformationUI(ObjectField target)
