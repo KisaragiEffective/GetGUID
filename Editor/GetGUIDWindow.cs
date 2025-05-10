@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using JetBrains.Annotations;
 using UnityEditor;
 using UnityEditor.UIElements;
@@ -15,7 +16,7 @@ namespace GetGUID.Editor
         [MenuItem("Tools/Get GUID")]
         private static void OnMenu()
         {
-            GetWindow<GetGUIDWindow>().Show();
+            CreateInstance<GetGUIDWindow>().Show();
         }
         
         private void CreateGUI()
@@ -45,6 +46,28 @@ namespace GetGUID.Editor
                         _ => "Type specific information"
                     };
                 });
+            var importerTypeNameField = new TextField("importer");
+
+            target.RegisterValueChangedCallback(ev =>
+            {
+                if (ev.newValue == null)
+                {
+                    importerTypeNameField.value = "";
+                    return;
+                }
+
+                var path = AssetDatabase.GetAssetPath(ev.newValue);
+
+                if (string.IsNullOrEmpty(path))
+                {
+                    importerTypeNameField.value = "<this is GameObject>";
+                    return;
+                }
+
+                importerTypeNameField.value = AssetDatabase.GetImporterType(path).FullName;
+            });
+            
+            rootVisualElement.Add(importerTypeNameField);
             rootVisualElement.Add(typeSpecificInformation);
             typeSpecificInformation.Add(CreateScriptInformationUI(target));
             typeSpecificInformation.Add(CreateGameObjectInformationUI(target));
@@ -95,8 +118,10 @@ namespace GetGUID.Editor
             materialSpecificInformation.Add(shaderPath);
             var shaderGuid = new TextField("shader GUID");
             materialSpecificInformation.Add(shaderGuid);
-            var materialProperties = new Foldout { text = "Material property" };
-            materialSpecificInformation.Add(materialProperties);
+            var materialProperties0 = new Foldout { text = "Material property" };
+            materialSpecificInformation.Add(materialProperties0);
+            var materialProperties = new ScrollView(ScrollViewMode.Vertical);
+            materialProperties0.Add(materialProperties);
 
             target.RegisterValueChangedCallback(ev =>
             {
@@ -113,19 +138,41 @@ namespace GetGUID.Editor
                 shaderGuid.value = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(newValue.shader));
                 materialProperties.Clear();
                 var h = MaterialEditor.GetMaterialProperties(new Object[] { newValue });
-                foreach (var materialProperty in h)
+                foreach (var keywordSpaceKeyword in newValue.shader.keywordSpace.keywords)
                 {
-                    var s = materialProperty.type switch
+                    Debug.Log($"lk: n: {keywordSpaceKeyword.name} t: {keywordSpaceKeyword.type} d?: {keywordSpaceKeyword.isDynamic} o?: {keywordSpaceKeyword.isOverridable} v?: {keywordSpaceKeyword.isValid}");
+                }
+
+                var w = Shader.globalKeywords;
+                foreach (var keywordSpaceKeyword in Shader.globalKeywords)
+                {
+                    Debug.Log($"gk: n: {keywordSpaceKeyword.name}");
+                    if (w.Any(ww => ww.name == keywordSpaceKeyword.name))
                     {
-                        MaterialProperty.PropType.Color => "color",
-                        MaterialProperty.PropType.Vector => "vector",
-                        MaterialProperty.PropType.Float => "float",
-                        MaterialProperty.PropType.Range => "range",
-                        MaterialProperty.PropType.Texture => "texture",
-                        MaterialProperty.PropType.Int => "int",
+                        Debug.Log(" -- Enabled ");
+                    }
+                    else
+                    {
+                        Debug.Log(" -- Disabled ");
+                    }
+                }
+                foreach (var mp in h)
+                {
+                    var name = mp.name;
+                    VisualElement s = mp.type switch
+                    {
+                        MaterialProperty.PropType.Color => new ColorField(name) { value = newValue.GetColor(name) },
+                        MaterialProperty.PropType.Vector => new Vector4Field(name) { value = newValue.GetVector(name) },
+                        MaterialProperty.PropType.Float => new FloatField($"{name} (F)") { value = newValue.GetFloat(name) },
+                        MaterialProperty.PropType.Range => new FloatField($"{name} ({mp.rangeLimits[0]}..{mp.rangeLimits[1]})") { value = mp.floatValue },
+                        MaterialProperty.PropType.Texture => new ObjectField(name)
+                        {
+                            objectType = typeof(Texture), value = newValue.GetTexture(name)
+                        },
+                        MaterialProperty.PropType.Int => new IntegerField($"{name} (I)") { value = newValue.GetInteger(name) },
                         _ => throw new ArgumentOutOfRangeException()
                     };
-                    materialProperties.Add(new Label($"{materialProperty.name}: {s}"));
+                    materialProperties.Add(s);
                 }
 
             });
